@@ -84,14 +84,26 @@ CREATE OR REPLACE PROCEDURE add_family (
 //
 
 CREATE OR REPLACE PROCEDURE add_spouses (
-  in_person_1_id varchar(50), 
-  in_person_2_id varchar(50)
+  in_person_1_id int(10) unsigned, 
+  in_person_2_id int(10) unsigned
 )
  BEGIN
   INSERT INTO family(person_1_id, 
                      person_2_id)
   values(in_person_1_id,
          in_person_2_id);
+ END;
+//
+
+CREATE OR REPLACE PROCEDURE add_chaild (
+  in_spouses_id int(10) unsigned,
+  in_person_id int(10) unsigned
+)
+ BEGIN
+  INSERT INTO children(spouses_id, 
+                     person_id)
+  values(in_spouses_id,
+         in_person_id);
  END;
 //
 
