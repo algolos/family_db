@@ -76,7 +76,7 @@ CREATE OR REPLACE PROCEDURE add_family (
   in_info MEDIUMTEXT
 )
  BEGIN
-  INSERT INTO family(family_name, 
+  INSERT INTO families(family_name, 
                       info)
   values(in_family_name,
     in_info);
@@ -93,6 +93,6 @@ CREATE OR REPLACE PROCEDURE add_spouses (
   values(in_person_1_id,
          in_person_2_id);
  END;
- //
+//
 
 DELIMITER ;
