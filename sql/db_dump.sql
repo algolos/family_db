@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `persons` (
   `death_date` varchar(20),
   `foto` LONGBLOB,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 
 CREATE TABLE IF NOT EXISTS `spouses` (
@@ -18,14 +18,14 @@ CREATE TABLE IF NOT EXISTS `spouses` (
   `person_2_id` int(10) unsigned,
   `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) 
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ;
 
 
 CREATE TABLE IF NOT EXISTS `children` (
   `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `spouses_id` int(10) unsigned,
   `person_id` int(10) unsigned
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ;
 
 
 CREATE TABLE IF NOT EXISTS `families` (
@@ -34,13 +34,13 @@ CREATE TABLE IF NOT EXISTS `families` (
   `family_name` varchar(50),
   `info` MEDIUMTEXT, 
   PRIMARY KEY (`id`) 
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ;
 
 CREATE TABLE IF NOT EXISTS `families_heads` (
   `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `family_id` int(10) unsigned,
   `person_id` int(10) unsigned
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  ) ;
 
 DELIMITER //
 
@@ -88,7 +88,7 @@ CREATE OR REPLACE PROCEDURE add_spouses (
   in_person_2_id int(10) unsigned
 )
  BEGIN
-  INSERT INTO family(person_1_id, 
+  INSERT INTO spouses(person_1_id, 
                      person_2_id)
   values(in_person_1_id,
          in_person_2_id);
@@ -105,6 +105,34 @@ CREATE OR REPLACE PROCEDURE add_chaild (
   values(in_spouses_id,
          in_person_id);
  END;
+//
+CREATE OR REPLACE PROCEDURE get_person_id (
+   IN in_firstname varchar(50),
+   IN in_patronymic varchar(50),
+   IN in_secondname varchar(50),
+   OUT person_id int(10) unsigned 
+)
+ BEGIN
+  
+  DECLARE validator int(3) unsigned;
+
+  SET validator = (SELECT COUNT(id) FROM persons WHERE firstname=in_firstname
+    and patronymic=in_patronymic
+    and secondname=in_secondname);
+
+  IF validator = 0 THEN 
+    SET person_id = 0;
+  ELSEIF validator = 1 THEN 
+    SET person_id = (SELECT id FROM persons WHERE firstname=in_firstname
+                                                  and patronymic=in_patronymic
+                                                  and secondname=in_secondname);
+  ELSE SIGNAL SQLSTATE '45000' SET 
+      MESSAGE_TEXT = 'Returns more than 1 record';
+  END IF;
+  #SET person_id = in_firstname;
+
+ END;
+
 //
 
 DELIMITER ;
