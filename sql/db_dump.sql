@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS `persons` (
 
 CREATE TABLE IF NOT EXISTS `spouses` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `person_1_id` int(10) unsigned,
-  `person_2_id` int(10) unsigned,
+  `person_id_1` int(10) unsigned,
+  `person_id_2` int(10) unsigned,
   `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) 
   ) ;
@@ -83,15 +83,44 @@ CREATE OR REPLACE PROCEDURE add_family (
  END;
 //
 
-CREATE OR REPLACE PROCEDURE add_spouses (
-  in_person_1_id int(10) unsigned, 
-  in_person_2_id int(10) unsigned
+CREATE OR REPLACE PROCEDURE add_head (
+  IN in_family_name varchar(50), 
+  IN in_firstname varchar(50),
+  IN in_patronymic varchar(50),
+  IN in_secondname varchar(50)
 )
  BEGIN
-  INSERT INTO spouses(person_1_id, 
-                     person_2_id)
-  values(in_person_1_id,
-         in_person_2_id);
+  
+  CALL get_person_id(in_firstname, in_patronymic, in_secondname, @person_id);
+
+  CALL get_family_id(in_family_name, @family_id);
+
+  INSERT INTO families_heads(family_id, 
+                             person_id)
+                    values(@family_id,
+                           @person_id);
+ END;
+//
+
+CREATE OR REPLACE PROCEDURE add_spouses (
+   IN in_firstname_1 varchar(50),
+   IN in_patronymic_1 varchar(50),
+   IN in_secondname_1 varchar(50),
+   IN in_firstname_2 varchar(50),
+   IN in_patronymic_2 varchar(50),
+   IN in_secondname_2 varchar(50)
+)
+ BEGIN
+  -- DECLARE person_id_1 int(10) unsigned;
+  -- DECLARE person_id_2 int(10) unsigned;
+
+  CALL get_person_id(in_firstname_1, in_patronymic_1, in_secondname_1, @person_id_1);
+  CALL get_person_id(in_firstname_2, in_patronymic_2, in_secondname_2, @person_id_2);
+
+  INSERT INTO spouses(person_id_1, 
+                     person_id_2)
+  values(@person_id_1,
+         @person_id_2); 
  END;
 //
 
@@ -130,6 +159,28 @@ CREATE OR REPLACE PROCEDURE get_person_id (
       MESSAGE_TEXT = 'Returns more than 1 record';
   END IF;
   #SET person_id = in_firstname;
+
+ END;
+
+//
+
+CREATE OR REPLACE PROCEDURE get_family_id (
+   IN in_family_name varchar(50),
+   OUT family_id int(10) unsigned 
+)
+ BEGIN
+  
+  DECLARE validator int(3) unsigned;
+
+  SET validator = (SELECT COUNT(id) FROM families WHERE family_name=in_family_name);
+
+  IF validator = 0 THEN 
+    SET family_id = 0;
+  ELSEIF validator = 1 THEN 
+    SET family_id = (SELECT id FROM families WHERE family_name=in_family_name);
+  ELSE SIGNAL SQLSTATE '45000' SET 
+      MESSAGE_TEXT = 'Returns more than 1 record';
+  END IF;
 
  END;
 
