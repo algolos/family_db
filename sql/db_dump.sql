@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS `children` (
 CREATE TABLE IF NOT EXISTS `families` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `create_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `family_name` varchar(50),
+  `family_name` varchar(50) unique,
   `info` MEDIUMTEXT, 
-  PRIMARY KEY (`id`) 
+  PRIMARY KEY (`id`)
   ) ;
 
 CREATE TABLE IF NOT EXISTS `families_heads` (
@@ -41,6 +41,13 @@ CREATE TABLE IF NOT EXISTS `families_heads` (
   `family_id` int(10) unsigned,
   `person_id` int(10) unsigned
   ) ;
+
+CREATE TABLE IF NOT EXISTS `unknown_persons` (
+  firstname ENUM('Брат','Сын','Дочь','Муж','Жена','Ребенок'),
+  unique key  (firstname)
+  ) ;
+
+INSERT INTO unknown_persons VALUES ('Брат'),('Сын'),('Дочь'),('Муж'),('Жена'),('Ребенок');
 
 DELIMITER //
 
@@ -51,9 +58,19 @@ CREATE OR REPLACE PROCEDURE add_person (
   in_gender varchar(1), 
   in_birth_date varchar(20), 
   in_death_date varchar(20),
-  in_foto LONGBLOB
+  in_foto LONGBLOB,
+  OUT out_firstname varchar(50) 
 )
  BEGIN
+  
+  DECLARE next_id int(3) unsigned;
+  SET out_firstname = NULL;
+
+  IF (SELECT COUNT(firstname) from unknown_persons where firstname=in_firstname) > 0 THEN 
+    SET in_firstname = CONCAT(in_firstname,(SELECT Auto_increment FROM information_schema.tables WHERE table_name='persons'));
+    SET out_firstname = in_firstname;
+  END IF;
+
   INSERT INTO persons(firstname, 
                       patronymic, 
                       secondname, 
@@ -124,15 +141,28 @@ CREATE OR REPLACE PROCEDURE add_spouses (
  END;
 //
 
-CREATE OR REPLACE PROCEDURE add_chaild (
-  in_spouses_id int(10) unsigned,
-  in_person_id int(10) unsigned
+CREATE OR REPLACE PROCEDURE add_child (
+   IN in_firstname_1 varchar(50),
+   IN in_patronymic_1 varchar(50),
+   IN in_secondname_1 varchar(50),
+   IN in_firstname_2 varchar(50),
+   IN in_patronymic_2 varchar(50),
+   IN in_secondname_2 varchar(50),
+   IN in_child_firstname varchar(50),
+   IN in_child_patronymic varchar(50),
+   IN in_child_secondname varchar(50)
 )
  BEGIN
+
+  CALL get_spouses_id(in_firstname_1, in_patronymic_1, in_secondname_1, 
+                      in_firstname_2, in_patronymic_2, in_secondname_2, @sprouses_id);
+
+  CALL get_person_id(in_child_firstname, in_child_patronymic, in_child_secondname, @person_id);
+
   INSERT INTO children(spouses_id, 
                      person_id)
-  values(in_spouses_id,
-         in_person_id);
+  values(@spouses_id,
+         @person_id);
  END;
 //
 CREATE OR REPLACE PROCEDURE get_person_id (
@@ -183,6 +213,37 @@ CREATE OR REPLACE PROCEDURE get_family_id (
   END IF;
 
  END;
+
+//
+
+CREATE OR REPLACE PROCEDURE get_spouses_id(
+  IN in_firstname_1 varchar(50),
+   IN in_patronymic_1 varchar(50),
+   IN in_secondname_1 varchar(50),
+   IN in_firstname_2 varchar(50),
+   IN in_patronymic_2 varchar(50),
+   IN in_secondname_2 varchar(50),
+   OUT spouses_id int(10) unsigned  
+)
+BEGIN
+  DECLARE validator int(3) unsigned;
+  
+  CALL get_person_id(in_firstname_1, in_patronymic_1, in_secondname_1, @person_id_1);
+  CALL get_person_id(in_firstname_2, in_patronymic_2, in_secondname_2, @person_id_2);
+  
+  SET validator = (SELECT COUNT(id) FROM spouses WHERE (person_id_1=@person_id_1 and person_id_2=@person_id_2)
+                                                    OR (person_id_1=@person_id_2 and person_id_2=@person_id_1));
+
+  IF validator = 0 THEN 
+    SET spouses_id = 0;
+  ELSEIF validator = 1 THEN 
+    SET spouses_id = (SELECT id FROM spouses WHERE person_id_1=@person_id_1 and person_id_2=@person_id_2);
+  ELSE SIGNAL SQLSTATE '45000' SET 
+      MESSAGE_TEXT = 'Returns more than 1 record';
+  END IF;
+
+
+END;
 
 //
 
