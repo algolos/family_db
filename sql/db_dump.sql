@@ -155,7 +155,7 @@ CREATE OR REPLACE PROCEDURE add_child (
  BEGIN
 
   CALL get_spouses_id(in_firstname_1, in_patronymic_1, in_secondname_1, 
-                      in_firstname_2, in_patronymic_2, in_secondname_2, @sprouses_id);
+                      in_firstname_2, in_patronymic_2, in_secondname_2, @spouses_id);
 
   CALL get_person_id(in_child_firstname, in_child_patronymic, in_child_secondname, @person_id);
 
@@ -216,6 +216,7 @@ CREATE OR REPLACE PROCEDURE get_family_id (
 
 //
 
+-- call family.get_spouses_id('Григорий', 'Алексеевич', 'Нохрин','Афимья','Сазонтовна','Полякова', @output_id);
 CREATE OR REPLACE PROCEDURE get_spouses_id(
   IN in_firstname_1 varchar(50),
    IN in_patronymic_1 varchar(50),
